@@ -1,2 +1,3 @@
 # AIPC
-Artificial Intelligent Photo Catalog
+
+AI Photo Catalog
