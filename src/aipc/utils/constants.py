@@ -2,4 +2,4 @@
 
 OLLAMA_PORT = 11434
 OLLAMA_MODEL = "llava:latest"
-IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp")
