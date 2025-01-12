@@ -1,6 +1,6 @@
 # aipc/core/__init__.py
 
-from .labeling import LLaVA
+from .labeling import VisionModel
 
 
-__all__ = ['LLaVA']
+__all__ = ['VisionModel']

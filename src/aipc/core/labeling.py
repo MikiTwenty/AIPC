@@ -11,10 +11,11 @@ from typing import Optional, Dict
 import ollama
 
 from ..utils import BaseClass
+from ..retrieval import QdrantDB
 from ..utils.constants import OLLAMA_PORT, OLLAMA_MODEL, IMAGE_EXTENSIONS
 
 
-class LLaVA(BaseClass):
+class VisionModel(BaseClass):
     """
     Handles image labeling using the Ollama server with LLaVA model
     """
@@ -26,9 +27,8 @@ class LLaVA(BaseClass):
         Initializes the Labeling class with folder paths.
         """
         super().__init__(logger)
-
+        self.qdrant_db = QdrantDB()
         self.ollama_url = f"http://localhost:{OLLAMA_PORT}/api/generate"
-
         self.server_thread = threading.Thread(target=self._start_ollama_server, daemon=True)
         self.server_thread.start()
 
@@ -36,8 +36,12 @@ class LLaVA(BaseClass):
         """
         Starts the Ollama server. Assumes no checks are necessary.
         """
-        self.info("Starting Ollama server...")
-        os.system("ollama serve")
+        try:
+            self.info("Starting Ollama server...")
+            os.system("ollama serve")
+        except Exception as e:
+            self.error(f"Failed to start Ollama server: {e}")
+            raise
 
     def encode_image(
             self,
@@ -166,10 +170,10 @@ class LLaVA(BaseClass):
                 self.error(f"Image folder '{image_folder}' does not exist.")
                 return
 
-            images = [
-                image for image in image_folder.iterdir()
-                if image.suffix.lower() in IMAGE_EXTENSIONS
-            ]
+            images = [img for img in image_folder.iterdir() if img.suffix.lower() in IMAGE_EXTENSIONS]
+            if not images:
+                self.warning("No images found in the folder.")
+                return
 
             if not images:
                 self.warning("No images found in the folder.")
@@ -179,8 +183,19 @@ class LLaVA(BaseClass):
                 try:
                     self.info(f"Processing: {image_path}")
                     image_base64 = self.encode_image(image_path)
-                    caption = self.generate_caption(image_base64)
+
+                    exif_data = self.extract_exif_data(image_path)
+                    caption = self.generate_caption(image_base64, exif_data)
+
                     self.save_caption(image_path, caption)
+
+                    # Upload to Qdrant
+                    self.qdrant_db.insert_data([{
+                        "path": str(image_path),
+                        "caption": caption,
+                        "exif": exif_data
+                    }])
+                    self.info(f"Uploaded {image_path} to Qdrant.")
 
                 except Exception as e:
                     self.error(f"Error processing {image_path}: {e}")
