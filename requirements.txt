@@ -1,5 +1,8 @@
+flask
 ollama
 pillow
+flask-wtf
+flask-bootstrap
 requests
 qdrant-client
 sentence-transformers

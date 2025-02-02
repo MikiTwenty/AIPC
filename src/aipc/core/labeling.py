@@ -2,6 +2,7 @@
 
 import os
 import base64
+import socket
 import logging
 import threading
 from pathlib import Path
@@ -37,6 +38,12 @@ class VisionModel(BaseClass):
         Starts the Ollama server. Assumes no checks are necessary.
         """
         try:
+            # Check if the port is already in use
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                if s.connect_ex(("127.0.0.1", OLLAMA_PORT)) == 0:
+                    self.info(f"Ollama server is already running on port {OLLAMA_PORT}.")
+                    return
+
             self.info("Starting Ollama server...")
             os.system("ollama serve")
         except Exception as e:
